@@ -113,7 +113,72 @@ Sistema web completo para gerenciamento e contabilização de doações escolare
 - Conta no Firebase
 - Conta Google Cloud (para OAuth)
 
-### 2. Clone ou baixe o projeto
+### 2. Variáveis de ambiente
+
+Crie um arquivo `.env.local` com as chaves do Firebase (substitua pelos valores do seu projeto):
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=xxxx
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=xxxx.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=xxxx
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=xxxx.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=xxxx
+NEXT_PUBLIC_FIREBASE_APP_ID=1:xxxx:web:xxxx
+```
+
+### 3. Inicialização do Firebase e Cloud Functions
+
+1. Instale as dependências do frontend:
+
+   ```bash
+   npm install
+   ```
+
+2. Instale as dependências das Cloud Functions:
+
+   ```bash
+   cd cloud-functions
+   npm install
+   ```
+
+3. Faça login na CLI do Firebase, configure o projeto (`firebase use`) e em seguida execute o emulador ou o deploy das funções regionais:
+
+   ```bash
+   firebase deploy --only functions:generateRifas,functions:drawWinner
+   ```
+
+   As funções foram publicadas na região `southamerica-east1`. Garanta que os usuários administradores possuam a claim personalizada `role=admin` para liberar o sorteio.
+
+4. Execute o projeto localmente:
+
+   ```bash
+   npm run dev
+   ```
+
+### 4. Página /dashboard/rifa
+
+A página de controle da rifa beneficente utiliza dados em tempo real do Firestore e Cloud Functions transacionais para geração dos códigos sequenciais `RF-{ano}-{serial}`. Ela inclui:
+
+- Registro de doações por modal com autocomplete de alunos, validação `1 kg = 1 rifa` e confirmação com cópia/impressão dos códigos gerados.
+- Sorteio com confirmação, bloqueio automático da campanha e destaque do ganhador.
+- Tabs com transações, lista mestra de rifas e auditoria exportável (CSV/XLSX).
+- Ranking dinâmico de alunos e turmas com os prêmios configurados na campanha ativa.
+- Histórico de campanhas e modal para criação de novas campanhas (somente admin).
+
+Para auditoria completa, o Firestore deve conter as coleções `campanhas`, `alunos`, `doacoes`, `rifas`, `usuarios` e `auditoria`, conforme descrito em `types/index.ts` e nas funções em `cloud-functions/src`.
+
+### 5. Testes mínimos
+
+Para validar as principais regras de negócio da rifa execute:
+
+```bash
+npx tsc -p cloud-functions/tsconfig.json
+node --test cloud-functions/dist/tests/rifaRules.test.js
+```
+
+Os testes cobrem a conversão `kg → rifas`, bloqueio abaixo de 1 kg e a geração sequencial dos códigos `RF-{ano}-{serial}`.
+
+### 6. Clone ou baixe o projeto
 
 ```bash
 cd sociais-projetos
