@@ -1,0 +1,113 @@
+================================================================
+ÍNDICE DE ARQUIVOS DO PROJETO
+================================================================
+
+CONFIGURAÇÃO (9 arquivos)
+├── package.json
+├── tsconfig.json
+├── next.config.js
+├── tailwind.config.ts
+├── postcss.config.js
+├── components.json
+├── .eslintrc.json
+├── .gitignore
+└── .env.example
+
+DOCUMENTAÇÃO (5 arquivos)
+├── README.md
+├── DEPLOYMENT.md
+├── MANUAL_USO.md
+├── QUICK_START.md
+└── PROJETO_COMPLETO.md
+
+FIREBASE (1 arquivo)
+└── firestore.rules
+
+APP - PÁGINAS (7 arquivos)
+├── app/page.tsx
+├── app/layout.tsx
+├── app/globals.css
+├── app/auth/login/page.tsx
+├── app/dashboard/layout.tsx
+├── app/dashboard/dashboard/page.tsx
+├── app/dashboard/alunos/page.tsx
+├── app/dashboard/doacoes/page.tsx
+├── app/dashboard/relatorios/page.tsx
+└── app/dashboard/configuracoes/page.tsx
+
+COMPONENTS - UI (15 arquivos)
+├── components/ui/button.tsx
+├── components/ui/card.tsx
+├── components/ui/input.tsx
+├── components/ui/label.tsx
+├── components/ui/toast.tsx
+├── components/ui/toaster.tsx
+├── components/ui/dialog.tsx
+├── components/ui/select.tsx
+├── components/ui/dropdown-menu.tsx
+├── components/ui/avatar.tsx
+├── components/ui/tabs.tsx
+├── components/ui/table.tsx
+├── components/ui/badge.tsx
+├── components/ui/alert-dialog.tsx
+└── components/ui/progress.tsx
+
+COMPONENTS - DASHBOARD (5 arquivos)
+├── components/dashboard/MetricCard.tsx
+├── components/dashboard/MonthlyChart.tsx
+├── components/dashboard/ClassRankingCard.tsx
+├── components/dashboard/Sidebar.tsx
+└── components/dashboard/Header.tsx
+
+COMPONENTS - FORMS (2 arquivos)
+├── components/forms/StudentForm.tsx
+└── components/forms/DonationForm.tsx
+
+COMPONENTS - OUTROS (1 arquivo)
+└── components/ProtectedRoute.tsx
+
+LIB - FIREBASE (5 arquivos)
+├── lib/firebase/config.ts
+├── lib/firebase/auth.ts
+├── lib/firebase/students.ts
+├── lib/firebase/donations.ts
+└── lib/firebase/settings.ts
+
+LIB - UTILS (2 arquivos)
+├── lib/utils.ts
+└── lib/utils/dashboard.ts
+
+LIB - VALIDATORS (1 arquivo)
+└── lib/validators/index.ts
+
+TYPES (1 arquivo)
+└── types/index.ts
+
+CONTEXTS (1 arquivo)
+└── contexts/AuthContext.tsx
+
+HOOKS (1 arquivo)
+└── hooks/use-toast.ts
+
+================================================================
+TOTAL: 60+ arquivos
+================================================================
+
+DISTRIBUIÇÃO POR CATEGORIA:
+- Configuração: 9 arquivos
+- Documentação: 5 arquivos
+- Páginas: 10 arquivos
+- Componentes UI: 15 arquivos
+- Componentes Dashboard: 5 arquivos
+- Formulários: 2 arquivos
+- Firebase: 6 arquivos (5 + rules)
+- Utils: 3 arquivos
+- Types/Contexts/Hooks: 3 arquivos
+
+================================================================
+TAMANHO ESTIMADO:
+- TypeScript/TSX: ~4,500 linhas
+- CSS (Tailwind): ~200 linhas
+- JSON/Config: ~150 linhas
+- Markdown: ~20,000 palavras
+================================================================
