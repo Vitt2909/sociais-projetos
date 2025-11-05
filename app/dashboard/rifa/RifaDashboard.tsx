@@ -49,57 +49,47 @@ export const RifaDashboard = () => {
     }
   };
 
-  return (
-    <main className="space-y-10 px-4 py-10 sm:px-6 lg:px-10">
-      <CampaignHeader
-        campaign={campaign}
-        role={role}
-        onRegister={() => setRegisterOpen(true)}
-        onDraw={() => setConfirmDrawOpen(true)}
-        onViewRanking={() => setRankingOpen(true)}
-        drawingDisabled={isCampaignLocked || drawing}
-      />
+  const tabButtonClass = (tab: TabKey) =>
+    `inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${
+      activeTab === tab ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'
+    }`;
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-3 text-sm font-medium text-slate-600">
-          <button
-            type="button"
-            onClick={() => setActiveTab(Tabs.DOACOES)}
-            className={`rounded-md px-3 py-2 transition ${
-              activeTab === Tabs.DOACOES ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100'
-            }`}
-          >
+  return (
+    <main className="min-h-screen bg-slate-100">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
+        <CampaignHeader
+          campaign={campaign}
+          role={role}
+          onRegister={() => setRegisterOpen(true)}
+          onDraw={() => setConfirmDrawOpen(true)}
+          onViewRanking={() => setRankingOpen(true)}
+          drawingDisabled={isCampaignLocked || drawing}
+        />
+
+        <nav className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-sm backdrop-blur-sm">
+          <button type="button" onClick={() => setActiveTab(Tabs.DOACOES)} className={tabButtonClass(Tabs.DOACOES)}>
             Doações realizadas
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab(Tabs.RIFAS)}
-            className={`rounded-md px-3 py-2 transition ${
-              activeTab === Tabs.RIFAS ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100'
-            }`}
-          >
+          <button type="button" onClick={() => setActiveTab(Tabs.RIFAS)} className={tabButtonClass(Tabs.RIFAS)}>
             Lista mestra de rifas
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab(Tabs.AUDITORIA)}
-            className={`rounded-md px-3 py-2 transition ${
-              activeTab === Tabs.AUDITORIA ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100'
-            }`}
-          >
+          <button type="button" onClick={() => setActiveTab(Tabs.AUDITORIA)} className={tabButtonClass(Tabs.AUDITORIA)}>
             Auditoria
           </button>
         </nav>
 
-        <div className="mt-6">
-          {activeTab === Tabs.DOACOES ? <DonationsTable campaign={campaign} /> : null}
-          {activeTab === Tabs.RIFAS ? <TicketsTable campaign={campaign} /> : null}
-          {activeTab === Tabs.AUDITORIA ? (
-            <section className="space-y-4">
+        {activeTab === Tabs.DOACOES ? <DonationsTable campaign={campaign} /> : null}
+        {activeTab === Tabs.RIFAS ? <TicketsTable campaign={campaign} /> : null}
+        {activeTab === Tabs.AUDITORIA ? (
+          <section className="rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur-sm">
+            <div className="flex flex-col gap-2 border-b border-slate-200 px-6 py-5">
+              <h2 className="text-lg font-semibold text-slate-900">Auditoria</h2>
               <p className="text-sm text-slate-600">
                 Registros de auditoria vinculados à campanha ativa, incluindo criação, atualizações e sorteios.
               </p>
-              <div className="overflow-x-auto">
+            </div>
+            <div className="px-6 pb-6 pt-4">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                   <thead className="bg-slate-50">
                     <tr>
@@ -111,14 +101,14 @@ export const RifaDashboard = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white">
                     {logs.map((log) => (
-                      <tr key={log.id}>
+                      <tr key={log.id} className="transition hover:bg-slate-50">
                         <td className="px-4 py-3 text-slate-600">
                           {format(log.timestamp, 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                         </td>
                         <td className="px-4 py-3 font-medium text-slate-800">{log.what}</td>
                         <td className="px-4 py-3 text-slate-600">{log.who.nome}</td>
                         <td className="px-4 py-3 text-xs text-slate-500">
-                          <pre className="whitespace-pre-wrap break-words rounded bg-slate-50 p-2">
+                          <pre className="whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3">
                             {JSON.stringify({ before: log.before ?? null, after: log.after ?? null }, null, 2)}
                           </pre>
                         </td>
@@ -126,7 +116,7 @@ export const RifaDashboard = () => {
                     ))}
                     {!logs.length && !auditLoading ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-6 text-center text-sm text-slate-500">
+                        <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-500">
                           Nenhum evento registrado ainda.
                         </td>
                       </tr>
@@ -134,14 +124,23 @@ export const RifaDashboard = () => {
                   </tbody>
                 </table>
               </div>
-              {auditLoading ? <p className="text-sm text-slate-500">Carregando auditoria...</p> : null}
-              {auditError ? <p className="text-sm text-red-600">{auditError}</p> : null}
-            </section>
-          ) : null}
-        </div>
-      </div>
+              {auditLoading ? <p className="mt-4 text-sm text-slate-500">Carregando auditoria...</p> : null}
+              {auditError ? <p className="mt-4 text-sm text-red-600">{auditError}</p> : null}
+            </div>
+          </section>
+        ) : null}
 
-      <CampaignHistory history={history} onCreate={() => setCreateOpen(true)} />
+        <CampaignHistory history={history} onCreate={() => setCreateOpen(true)} />
+
+        {loading ? (
+          <div className="rounded-xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-600 shadow-sm">
+            Carregando campanha...
+          </div>
+        ) : null}
+        {error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">{error}</div>
+        ) : null}
+      </div>
 
       <RegisterDonationModal
         open={registerOpen}
@@ -156,15 +155,11 @@ export const RifaDashboard = () => {
 
       <Ranking campaign={campaign} open={rankingOpen} onClose={() => setRankingOpen(false)} />
 
-      <CreateCampaignModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreate={createCampaign}
-      />
+      <CreateCampaignModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={createCampaign} />
 
       {confirmDrawOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
             <h2 className="text-xl font-semibold text-slate-900">Confirmar sorteio</h2>
             <p className="mt-2 text-sm text-slate-600">
               Esta ação é final e irreversível. Deseja sortear o ganhador agora?
@@ -173,7 +168,7 @@ export const RifaDashboard = () => {
               <button
                 type="button"
                 onClick={() => setConfirmDrawOpen(false)}
-                className="rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700"
+                className="rounded-md px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-slate-700"
               >
                 Cancelar
               </button>
@@ -181,7 +176,7 @@ export const RifaDashboard = () => {
                 type="button"
                 onClick={handleDraw}
                 disabled={drawing}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {drawing ? 'Sorteando...' : 'Confirmar Sorteio 🎲'}
               </button>
@@ -208,9 +203,6 @@ export const RifaDashboard = () => {
           </div>
         </div>
       ) : null}
-
-      {loading ? <p className="text-sm text-slate-500">Carregando campanha...</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </main>
   );
 };
