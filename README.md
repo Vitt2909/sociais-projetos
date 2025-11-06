@@ -155,7 +155,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:xxxx:web:xxxx
    npm run dev
    ```
 
-### 4. Página /dashboard/rifa
+### 4. Página /dashboard/rifas
 
 A página de controle da rifa beneficente utiliza dados em tempo real do Firestore e Cloud Functions transacionais para geração dos códigos sequenciais `RF-{ano}-{serial}`. Ela inclui:
 
