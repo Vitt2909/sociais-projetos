@@ -1,4 +1,4 @@
-import RifaDashboard from '../dashboard/rifa/RifaDashboard';
+import RifaDashboard from '../dashboard/rifas/RifaDashboard';
 
 export default function RifasPage() {
   return <RifaDashboard />;
