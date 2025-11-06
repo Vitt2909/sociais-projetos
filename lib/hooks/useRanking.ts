@@ -22,9 +22,12 @@ export const useRanking = (campanha?: Campanha | null) => {
       setDonations([]);
       return undefined;
     }
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
     setLoading(true);
     const q = query(
-      doacoesCollection,
+      doacoesCollection(),
       where('campanhaId', '==', campanha.id),
       orderBy('data', 'desc')
     );
@@ -40,7 +43,7 @@ export const useRanking = (campanha?: Campanha | null) => {
       }
     );
     return () => unsub();
-  }, [campanha?.id]);
+  }, [campanha, campanha?.id]);
 
   const ranking = useMemo(() => {
     const alunosMap = new Map<string, RankingEntry>();

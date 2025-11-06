@@ -25,8 +25,11 @@ export const useTickets = (campanhaId?: string) => {
       setTickets([]);
       return undefined;
     }
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
     setLoading(true);
-    const q = query(rifasCollection, where('campanhaId', '==', campanhaId), orderBy('codigo'));
+    const q = query(rifasCollection(), where('campanhaId', '==', campanhaId), orderBy('codigo'));
     const unsub = onSnapshot(
       q,
       (snapshot) => {

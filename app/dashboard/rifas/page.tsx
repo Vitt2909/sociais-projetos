@@ -1,3 +1,5 @@
-import RifaDashboard from './RifaDashboard';
+import dynamic from 'next/dynamic';
 
-export default RifaDashboard;
+const Dashboard = dynamic(() => import('./RifaDashboard'), { ssr: false });
+
+export default Dashboard;

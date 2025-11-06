@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useForm } from 'react-hook-form';
@@ -16,7 +17,7 @@ import {
   YAxis,
 } from 'recharts';
 
-import { firestore } from '@/lib/firebase';
+import { getFirebaseFirestore } from '@/lib/firebase';
 import { useCampaign } from '@/lib/hooks/useCampaign';
 import { useDonations } from '@/lib/hooks/useDonations';
 import { useTickets } from '@/lib/hooks/useTickets';
@@ -53,7 +54,8 @@ const anonymizeName = (fullName: string) => {
 const formatDateTime = (date: Date) =>
   format(date, "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
 
-export default function TransparencyPage() {
+function TransparencyPage() {
+  const db = typeof window !== 'undefined' ? getFirebaseFirestore() : null;
   const { campaign, loading: campaignLoading, error: campaignError } = useCampaign();
   const {
     donations,
@@ -152,7 +154,10 @@ export default function TransparencyPage() {
   const onSubmit = form.handleSubmit(async (values) => {
     setFeedback(null);
     try {
-      await addDoc(collection(firestore, 'contestacoes'), {
+      if (!db) {
+        throw new Error('Serviços do Firebase indisponíveis.');
+      }
+      await addDoc(collection(db, 'contestacoes'), {
         ...values,
         campanhaId: campaign?.id ?? null,
         status: 'novo',
@@ -542,3 +547,5 @@ export default function TransparencyPage() {
     </div>
   );
 }
+
+export default dynamic(() => Promise.resolve(TransparencyPage), { ssr: false });

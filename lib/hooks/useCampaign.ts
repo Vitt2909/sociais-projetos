@@ -1,10 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { onSnapshot, query, where, doc, runTransaction, addDoc, collection, updateDoc } from 'firebase/firestore';
+import {
+  onSnapshot,
+  query,
+  where,
+  doc,
+  runTransaction,
+  collection,
+  updateDoc,
+  getDocs,
+  setDoc,
+} from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, firestore, functions } from '@/lib/firebase';
+import { getFirebaseAuth, getFirebaseFirestore, getFirebaseFunctions } from '@/lib/firebase';
 import {
   activeCampaignQuery,
   campaignHistoryQuery,
@@ -50,8 +60,15 @@ export const useCampaign = (): UseCampaignState => {
   const [user, setUser] = useState<{ uid: string; displayName: string | null } | null>(null);
   const [role, setRole] = useState<Usuario['role'] | null>(null);
 
+  const auth = typeof window !== 'undefined' ? getFirebaseAuth() : null;
+  const db = typeof window !== 'undefined' ? getFirebaseFirestore() : null;
+  const functions = typeof window !== 'undefined' ? getFirebaseFunctions() : null;
+
   useEffect(() => {
-    const unsub = onSnapshot(activeCampaignQuery, (snapshot) => {
+    if (!db) {
+      return;
+    }
+    const unsub = onSnapshot(activeCampaignQuery(), (snapshot) => {
       if (snapshot.empty) {
         setCampaign(null);
       } else {
@@ -63,16 +80,22 @@ export const useCampaign = (): UseCampaignState => {
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [db]);
 
   useEffect(() => {
-    const unsub = onSnapshot(campaignHistoryQuery, (snapshot) => {
+    if (!db) {
+      return;
+    }
+    const unsub = onSnapshot(campaignHistoryQuery(), (snapshot) => {
       setHistory(snapshot.docs.map((doc) => doc.data()));
     });
     return () => unsub();
-  }, []);
+  }, [db]);
 
   useEffect(() => {
+    if (!auth || !db) {
+      return () => {};
+    }
     let unsubscribeUsuario: (() => void) | null = null;
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (unsubscribeUsuario) {
@@ -85,7 +108,7 @@ export const useCampaign = (): UseCampaignState => {
         return;
       }
       setUser({ uid: firebaseUser.uid, displayName: firebaseUser.displayName });
-      const usuarioDoc = doc(firestore, 'usuarios', firebaseUser.uid);
+      const usuarioDoc = doc(db, 'usuarios', firebaseUser.uid);
       unsubscribeUsuario = onSnapshot(usuarioDoc, (snapshot) => {
         if (!snapshot.exists()) {
           setRole(null);
@@ -102,7 +125,7 @@ export const useCampaign = (): UseCampaignState => {
       }
       unsubscribeAuth();
     };
-  }, []);
+  }, [auth, db]);
 
   const drawWinner = useCallback(async () => {
     if (!campaign) {
@@ -111,29 +134,37 @@ export const useCampaign = (): UseCampaignState => {
     if (role !== 'admin') {
       throw new Error('Permissão negada: apenas administradores podem sortear.');
     }
+    if (!functions) {
+      throw new Error('Serviços do Firebase indisponíveis.');
+    }
     const callable = httpsCallable(functions, 'drawWinner');
     const result = await callable({ campanhaId: campaign.id });
     const payload = result.data as { vencedor: DrawWinnerResponse };
     if (!payload?.vencedor) {
       throw new Error('Não foi possível obter o ganhador.');
     }
-  }, [campaign, role]);
+  }, [campaign, functions, role]);
 
   const createCampaign = useCallback(
     async ({ nome, dataSorteio, premioPrincipal, premios, metaKg, ativa }: CreateCampaignPayload) => {
       if (role !== 'admin') {
         throw new Error('Permissão negada: apenas administradores podem criar campanhas.');
       }
-      await runTransaction(firestore, async (transaction) => {
-        if (ativa) {
-          const ativaQuery = query(campanhasCollection, where('status', '==', 'ativa'));
-          const ativaSnapshot = await transaction.get(ativaQuery);
-          ativaSnapshot.docs.forEach((docSnap) => {
-            transaction.update(docSnap.ref, { status: 'encerrada' });
-          });
-        }
+      if (!db) {
+        throw new Error('Serviços do Firebase indisponíveis.');
+      }
+      await runTransaction(db, async (transaction) => {
+        const activeCampaignRefs = ativa
+          ? await getDocs(query(campanhasCollection(), where('status', '==', 'ativa'))).then((snapshot) =>
+              snapshot.docs.map((docSnap) => docSnap.ref),
+            )
+          : [];
 
-        const campanhaRef = doc(collection(firestore, 'campanhas'));
+        activeCampaignRefs.forEach((docRef) => {
+          transaction.update(docRef, { status: 'encerrada' });
+        });
+
+        const campanhaRef = doc(collection(db, 'campanhas'));
         transaction.set(campanhaRef, {
           nome,
           dataSorteio,
@@ -145,7 +176,7 @@ export const useCampaign = (): UseCampaignState => {
           lastSerial: 0,
         });
 
-        transaction.set(doc(collection(firestore, 'auditoria')), {
+        transaction.set(doc(collection(db, 'auditoria')), {
           who: { userId: user?.uid ?? 'desconhecido', nome: user?.displayName ?? 'Desconhecido' },
           what: 'create_campaign',
           entity: campanhaRef.id,
@@ -161,7 +192,7 @@ export const useCampaign = (): UseCampaignState => {
         });
       });
     },
-    [role, user?.uid, user?.displayName]
+    [db, role, user?.uid, user?.displayName]
   );
 
   const setCampaignStatus = useCallback(
@@ -170,9 +201,14 @@ export const useCampaign = (): UseCampaignState => {
       if (role !== 'admin') {
         throw new Error('Permissão negada: apenas administradores podem alterar campanha.');
       }
-      const campaignRef = doc(firestore, 'campanhas', campaign.id);
+      if (!db) {
+        throw new Error('Serviços do Firebase indisponíveis.');
+      }
+      const campaignRef = doc(db, 'campanhas', campaign.id);
       await updateDoc(campaignRef, { status });
-      await addDoc(auditoriaCollection, {
+      const auditLogRef = doc(auditoriaCollection());
+      await setDoc(auditLogRef, {
+        id: auditLogRef.id,
         who: { userId: user?.uid ?? 'desconhecido', nome: user?.displayName ?? 'Desconhecido' },
         what: 'update_campaign_status',
         entity: campaign.id,
@@ -181,7 +217,7 @@ export const useCampaign = (): UseCampaignState => {
         timestamp: new Date(),
       });
     },
-    [campaign, role, user?.uid, user?.displayName]
+    [campaign, db, role, user?.uid, user?.displayName]
   );
 
   return {

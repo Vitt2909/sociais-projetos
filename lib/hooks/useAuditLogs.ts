@@ -15,9 +15,12 @@ export const useAuditLogs = (entityId?: string) => {
       setLogs([]);
       return undefined;
     }
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
     setLoading(true);
     const q = query(
-      auditoriaCollection,
+      auditoriaCollection(),
       where('entity', '==', entityId),
       orderBy('timestamp', 'desc')
     );

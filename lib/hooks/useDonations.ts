@@ -25,9 +25,12 @@ export const useDonations = (campanhaId?: string) => {
       setDonations([]);
       return undefined;
     }
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
     setLoading(true);
     const q = query(
-      doacoesCollection,
+      doacoesCollection(),
       where('campanhaId', '==', campanhaId),
       orderBy('data', 'desc')
     );
