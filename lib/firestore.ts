@@ -6,16 +6,19 @@ import {
   limit,
   FirestoreDataConverter,
   Timestamp,
+  FieldValue,
 } from 'firebase/firestore';
-import { firestore } from './firebase';
+import { getFirebaseFirestore } from './firebase';
 import type { Campanha, Aluno, Doacao, Rifa, AuditoriaLog, Usuario } from '@/types';
 
-type WithTimestamps<T> = Omit<T, 'data' | 'dataSorteio' | 'timestamp' | 'vencedor'> & {
+type WithTimestamps<T> = Omit<T, 'id' | 'data' | 'dataSorteio' | 'timestamp' | 'vencedor'> & {
   data?: Date;
   dataSorteio?: Date;
   timestamp?: Date;
   vencedor?: Campanha['vencedor'];
 };
+
+type CampanhaVencedor = NonNullable<Campanha['vencedor']>;
 
 const toDate = (value: unknown): Date => {
   if (value instanceof Date) return value;
@@ -25,14 +28,43 @@ const toDate = (value: unknown): Date => {
   return new Date(value as string);
 };
 
+const hasWinnerDate = (
+  value: CampanhaVencedor | FieldValue | undefined,
+): value is CampanhaVencedor => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    typeof record.codigo === 'string' &&
+    typeof record.alunoId === 'string' &&
+    typeof record.alunoNome === 'string' &&
+    typeof record.turmaNome === 'string' &&
+    record.data instanceof Date
+  );
+};
+
 const campanhaConverter: FirestoreDataConverter<Campanha> = {
   toFirestore(campanha) {
-    return {
+    const vencedor = campanha.vencedor as CampanhaVencedor | FieldValue | undefined;
+    const baseData = {
       ...campanha,
       dataSorteio: campanha.dataSorteio,
-      vencedor: campanha.vencedor
-        ? { ...campanha.vencedor, data: campanha.vencedor.data }
-        : undefined,
+    };
+
+    if (!hasWinnerDate(vencedor)) {
+      return {
+        ...baseData,
+        vencedor,
+      };
+    }
+
+    const winnerData = vencedor;
+    return {
+      ...baseData,
+      vencedor: { ...winnerData, data: winnerData.data },
     };
   },
   fromFirestore(snapshot) {
@@ -53,7 +85,7 @@ const alunoConverter: FirestoreDataConverter<Aluno> = {
     return aluno;
   },
   fromFirestore(snapshot) {
-    return { id: snapshot.id, ...(snapshot.data() as Aluno) };
+    return { id: snapshot.id, ...(snapshot.data() as Omit<Aluno, 'id'>) };
   },
 };
 
@@ -96,7 +128,7 @@ const usuarioConverter: FirestoreDataConverter<Usuario> = {
     return usuario;
   },
   fromFirestore(snapshot) {
-    return { id: snapshot.id, ...(snapshot.data() as Usuario) };
+    return { id: snapshot.id, ...(snapshot.data() as Omit<Usuario, 'id'>) };
   },
 };
 
@@ -117,12 +149,20 @@ const auditoriaConverter: FirestoreDataConverter<AuditoriaLog> = {
   },
 };
 
-export const campanhasCollection = collection(firestore, 'campanhas').withConverter(campanhaConverter);
-export const alunosCollection = collection(firestore, 'alunos').withConverter(alunoConverter);
-export const doacoesCollection = collection(firestore, 'doacoes').withConverter(doacaoConverter);
-export const rifasCollection = collection(firestore, 'rifas').withConverter(rifaConverter);
-export const usuariosCollection = collection(firestore, 'usuarios').withConverter(usuarioConverter);
-export const auditoriaCollection = collection(firestore, 'auditoria').withConverter(auditoriaConverter);
+export const campanhasCollection = () =>
+  collection(getFirebaseFirestore(), 'campanhas').withConverter(campanhaConverter);
+export const alunosCollection = () =>
+  collection(getFirebaseFirestore(), 'alunos').withConverter(alunoConverter);
+export const doacoesCollection = () =>
+  collection(getFirebaseFirestore(), 'doacoes').withConverter(doacaoConverter);
+export const rifasCollection = () =>
+  collection(getFirebaseFirestore(), 'rifas').withConverter(rifaConverter);
+export const usuariosCollection = () =>
+  collection(getFirebaseFirestore(), 'usuarios').withConverter(usuarioConverter);
+export const auditoriaCollection = () =>
+  collection(getFirebaseFirestore(), 'auditoria').withConverter(auditoriaConverter);
 
-export const activeCampaignQuery = query(campanhasCollection, where('status', '==', 'ativa'), limit(1));
-export const campaignHistoryQuery = query(campanhasCollection, orderBy('dataSorteio', 'desc'));
+export const activeCampaignQuery = () =>
+  query(campanhasCollection(), where('status', '==', 'ativa'), limit(1));
+export const campaignHistoryQuery = () =>
+  query(campanhasCollection(), orderBy('dataSorteio', 'desc'));

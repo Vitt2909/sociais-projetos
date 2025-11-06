@@ -5,7 +5,7 @@ import { onSnapshot, orderBy, query } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { format } from 'date-fns';
 import { alunosCollection } from '@/lib/firestore';
-import { functions } from '@/lib/firebase';
+import { getFirebaseFunctions } from '@/lib/firebase';
 import type { Aluno, Campanha } from '@/types';
 
 interface RegisterDonationModalProps {
@@ -29,6 +29,7 @@ export const RegisterDonationModal = ({
   onSuccess,
   disabled,
 }: RegisterDonationModalProps) => {
+  const cloudFunctions = typeof window !== 'undefined' ? getFirebaseFunctions() : null;
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [search, setSearch] = useState('');
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
@@ -44,7 +45,7 @@ export const RegisterDonationModal = ({
 
   useEffect(() => {
     if (!open) return;
-    const q = query(alunosCollection, orderBy('nome'));
+    const q = query(alunosCollection(), orderBy('nome'));
     const unsub = onSnapshot(q, (snapshot) => {
       setAlunos(snapshot.docs.map((doc) => doc.data()));
     });
@@ -128,7 +129,10 @@ export const RegisterDonationModal = ({
     try {
       setLoading(true);
       setError(null);
-      const callable = httpsCallable(functions, 'generateRifas');
+      if (!cloudFunctions) {
+        throw new Error('Serviços do Firebase indisponíveis.');
+      }
+      const callable = httpsCallable(cloudFunctions, 'generateRifas');
       const pesoNumber = Number(peso.replace(',', '.'));
       const result = await callable({
         campanhaId: campaign.id,
